@@ -29,12 +29,32 @@ var router = Backbone.Router.extend({
 });
 
 var homeView = Backbone.View.extend({
+  initialize: function() {
+    this.$el.html(this.template);
+    this.collection.on('addToCart', this.showCart, this); 
+  },
   el: 'body',
-  template: _.template('Apple data: <%= data %>'), 
+  listEl: '.apples-list',
+  cartEl: '.cart-box',
+  template: _.template('Apple data: \
+    <ul class="apples-list">\
+    </ul>\
+    <div class="cart-box"></div>'),
   render: function(){
-    this.$el.html(this.template({
-      data: JSON.stringify(this.collection.models) 
-    }));
+    view = this;
+    //so we can use view inside of closure 
+    this.collection.each(function(apple){
+      var appleSubView = new appleItemView({model:apple}); 
+      // creates subview with model apple 
+      appleSubView.render();
+      // compiles template and single apple data 
+      $(view.listEl).append(appleSubView.$el);
+      //append jQuery object from single
+      //apple to apples-list DOM element
+    }); 
+  },
+  showCart: function(appleModel) {
+    $(this.cartEl).append(appleModel.attributes.name+'<br/>');
   }
   //TODO subviews
 });
@@ -74,6 +94,22 @@ var appleView = Backbone.View.extend({
   },
   showSpinner: function() {
     $('body').html(this.templateSpinner);
+  }
+});
+
+var appleItemView = Backbone.View.extend({
+  tagName: 'li',
+  template: _.template(''
+         +'<a href="#apples/<%=name%>" target="_blank">'
+        +'<%=name%>'
+        +'</a>&nbsp;<a class="add-to-cart" href="#">buy</a>'),
+  events: {
+    'click .add-to-cart': 'addToCart'
+  },
+  render: function() {
+    this.$el.html(this.template(this.model.attributes)); },
+  addToCart: function(){
+    this.model.collection.trigger('addToCart', this.model);
   }
 });
 
